@@ -56,5 +56,6 @@ class LocalBear(Bear):
         metadata.non_optional_params.pop("self", None)
         metadata.non_optional_params.pop("filename", None)
         metadata.non_optional_params.pop("file", None)
+        metadata.non_optional_params.pop("dependency_results", None)
 
         return metadata

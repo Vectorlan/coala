@@ -144,8 +144,36 @@ class Bear:
         """
         metadata = FunctionMetadata.from_function(cls.run_bear)
         metadata.non_optional_params.pop("self", None)
+        metadata.non_optional_params.pop("dependency_results", None)
 
         return metadata
+
+    @classmethod
+    def list_contains_dependencies(cls, lst):
+        """
+        Checks if the given list contains all dependencies.
+
+        :param lst: A list of all bear classes or instances.
+        :return True or a list of missing dependencies.
+        """
+        deps = cls.get_dependencies()
+
+        for item in lst:
+            name = item.__class__.__name__
+            if name in deps:
+                deps.remove(name)
+
+        return True if len(deps) == 0 else deps
+
+    @staticmethod
+    def get_dependencies():
+        """
+        Retrieves bear names that are to be executed before this bear gets executed. The results of these
+        bears will then be passed to the run_bear method via the dependency_results argument.
+
+        :return A list of bear names.
+        """
+        return []
 
     @classmethod
     def get_non_optional_settings(cls):
