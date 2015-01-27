@@ -11,22 +11,50 @@ class Interactor(SectionCreatable):
         self.log_printer = log_printer
 
     def _print_result(self, result):
+        """
+        Prints the result.
+        """
         raise NotImplementedError
 
-    def print_result(self, result):
+    def _print_actions(self, actions):
+        """
+        Prints the given actions and lets the user choose.
+
+        :param actions: A list of FunctionMetadata objects.
+        :return: A touple with the name member of the FunctionMetadata object chosen by the user and a Section
+        containing at least all needed values for the action.
+        """
+        raise NotImplementedError
+
+    def print_result(self, result, file_dict, file_diff_dict):
         """
         Prints the result appropriate to the output medium.
 
         :param result: A derivative of Result.
+        :param file_dict: Dictionary containing filename: file_contents
         """
         if not isinstance(result, Result):
             self.log_printer.warn(_("One of the results can not be printed since it is not a valid derivative of the "
                                     "coala result class."))
             return
 
-        return self._print_result(result)
+        self._print_result(result)
 
-    def print_results(self, result_list, file_dict):
+        actions = result.get_actions()
+        if actions == []:
+            return
+
+        action_dict = {}
+        metadata_list = []
+        for action in actions:
+            metadata = action.get_metadata()
+            action_dict[metadata.name] = action
+            metadata_list.append(metadata)
+
+        chosen_action, section = action_dict[self._print_actions(metadata_list)]
+        chosen_action.apply_from_section(result, file_dict, file_diff_dict, section)
+
+    def print_results(self, result_list, file_dict, file_diff_dict):
         """
         Prints all given results. They will be sorted.
 
@@ -40,7 +68,7 @@ class Interactor(SectionCreatable):
 
         sorted_results = sorted(result_list)
         for result in sorted_results:
-            self.print_result(result)
+            self.print_result(result, file_dict, file_diff_dict)
 
     def acquire_settings(self, settings):
         """
