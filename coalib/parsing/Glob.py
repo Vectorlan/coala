@@ -17,8 +17,10 @@ def _make_selector(pattern_parts):
 
 
 def _is_wildcard_pattern(pat):
-    # Whether this pattern needs actual matching using fnmatch, or can
-    # be looked up directly as part of a path.
+    """
+    Whether this pattern needs actual matching using fnmatch, or can
+    be looked up directly as part of a path.
+    """
     return "*" in pat or "?" in pat or "[" in pat
 
 
@@ -49,7 +51,6 @@ class _PathSelector(_Selector):
     """
     represents names of files and directories that do not need to be matched using fnmatch
     """
-
     def __init__(self, path, child_parts):
         self.path = path
         _Selector.__init__(self, child_parts)
@@ -70,11 +71,12 @@ class _WildcardSelector(_Selector):
         _Selector.__init__(self, child_parts)
 
     def _collect(self, path):
-        for file_or_dir in os.listdir(path):
-            if fnmatch.fnmatch(file_or_dir, self.pat):
-                file_or_dir = os.path.join(path, file_or_dir)
-                for result in self.successor.collect(file_or_dir):
-                    yield result
+        if os.path.isdir(path):
+            for file_or_dir in os.listdir(path):
+                if fnmatch.fnmatch(file_or_dir, self.pat):
+                    file_or_dir = os.path.join(path, file_or_dir)
+                    for result in self.successor.collect(file_or_dir):
+                        yield result
 
 
 class _RecursiveWildcardSelector(_Selector):
@@ -85,15 +87,20 @@ class _RecursiveWildcardSelector(_Selector):
         _Selector.__init__(self, child_parts)
 
     def _collect(self, path):
-        for root, dirs, files in os.walk(path):
+        for root, dirs, files in os.walk(path, followlinks=True):
             for result in self.successor.collect(root):
                 yield result
 
 
-def glob(pattern, files=True, dirs=True):
+def iglob(pattern, files=True, dirs=True):
+    """Iterate over this subtree and yield all existing files matching the given pattern.
+    :param pattern: Unix style glob pattern that matches paths
+    :param files: Whether or not to include files
+    :param dirs: Whether or not to include directories
+    :return: list of all files matching the pattern
     """
-    Iterate over this subtree and yield all existing files (excluding directories) matching the given pattern.
-    """
+    if pattern == "":
+        raise StopIteration()
     pattern_parts = pattern.split(os.sep)  # "/a/b/c.py" -> ['', 'a', 'b', 'c.py']
     if pattern.startswith(os.sep):
         pattern_parts[0] = os.sep  # would be '' instead
@@ -106,3 +113,13 @@ def glob(pattern, files=True, dirs=True):
         else:  # dir
             if dirs is True:
                 yield p
+
+
+def glob(pattern, files=True, dirs=True):
+    """Iterate over this subtree and return a list of all existing files matching the given pattern.
+    :param pattern: Unix style glob pattern that matches paths
+    :param files: Whether or not to include files
+    :param dirs: Whether or not to include directories
+    :return: list of all files matching the pattern
+    """
+    return list(iglob(pattern, files, dirs))

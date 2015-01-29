@@ -1,3 +1,4 @@
+import glob as python_standard_glob
 import os
 import shutil
 import sys
@@ -5,7 +6,7 @@ import tempfile
 
 sys.path.insert(0, ".")
 import unittest
-from coalib.parsing.Glob import glob, _Selector
+from coalib.parsing.Glob import glob, iglob, _Selector
 
 
 class GlobTest(unittest.TestCase):
@@ -26,24 +27,31 @@ class GlobTest(unittest.TestCase):
         shutil.rmtree(self.tmp_dir)
 
     def test_files(self):
-        file_name_list = sorted(list(glob(os.path.join(self.tmp_dir, "pref*", "**", "*.py"), dirs=False)))
+        file_name_list = sorted(glob(os.path.join(self.tmp_dir, "pref*", "**", "*.py"), dirs=False))
         self.assertEqual(file_name_list, sorted([self.testfile1_path, self.testfile3_path]))
 
     def test_dirs(self):
-        dir_name_list = sorted(list(glob(os.path.join(self.tmp_dir, "**", "random*"), files=False)))
+        dir_name_list = sorted(glob(os.path.join(self.tmp_dir, "**", "random*"), files=False))
         self.assertEqual(dir_name_list, sorted([self.tmp_subdir2, self.tmp_subdir3]))
 
     def test_miss(self):
-        dir_name_list = sorted(list(glob(os.path.join("*", "something", "that", "isnt", "there"))))
+        dir_name_list = sorted(glob(os.path.join("*", "something", "that", "isnt", "there")))
         self.assertEqual(dir_name_list, [])
 
     def test_none(self):
-        dir_name_list = sorted(list(glob(os.path.join(self.tmp_dir, "**", "*"), files=False, dirs=False)))
+        dir_name_list = sorted(glob(os.path.join(self.tmp_dir, "**", "*"), files=False, dirs=False))
         self.assertEqual(dir_name_list, [])
+
+    def test_empty(self):
+        self.assertEqual(glob(""), [])
+
+    def test_random(self):
+        path = os.path.join(os.getcwd(), "*", "*.py")
+        self.assertEqual(set(glob(path)), set(python_standard_glob.glob(path)))
 
     def test_wrong_wildcard(self):
         with self.assertRaises(ValueError):
-            a = list(glob(os.path.join("**", "a**b", "**")))
+            a = list(iglob(os.path.join("**", "a**b", "**")))
 
     def test_Selector_Error(self):
         with self.assertRaises(NotImplementedError):
